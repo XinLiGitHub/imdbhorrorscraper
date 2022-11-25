@@ -7,22 +7,18 @@ import dateutil.parser as dparser
 import sys
 IterList = []
 
-TitleList = []
-YearList = []
-RatingList = []
-LinkList = []
+TitleList = [], YearList = [], RatingList = [], LinkList = []
 MonthList = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+BudgetList = [], GrossList = [], NetList = [], DateList = []
 
-def first_scrape():
-
+def first_scrape(df1):
     # to get the numbers to loop through in url
-    for x in range(1600, 2100):
-    # for x in range(1000, 1200):
+    # for x in range(2000, 2100):
+    for x in range(1000, 2100):
         if (x % 50) == 1:
             IterList.append(x)
 
     for n in IterList:
-
         print("Scraping " + str(n))
         # beautifulsoup things
         url = "https://www.imdb.com/search/title/?title_type=feature&num_votes=5000,&genres=horror&view=simple&sort=release_date,asc&start=%s&ref_=adv_nxt" % n
@@ -61,12 +57,13 @@ def first_scrape():
         "Link": LinkList
     }
 
-    df = pd.DataFrame(data)
-    print(df)
+    df1 = pd.DataFrame(data)
+    return df1
+    # print(df1)
     
 testList = ["/title/tt12873562/", "/title/tt13314558/"]
 # second_scrape is to look thru the urls for each of the movies to get money and date data
-def second_scrape():
+def second_scrape(df2):
     for n in LinkList:
     # for n in testList:
         url = "https://www.imdb.com%s" % n
@@ -96,20 +93,26 @@ def second_scrape():
                 grossText = laundry_machine(grossText, i)
 
         if budgetBool:
-            print( budgetText)
+            print(budgetText)
+            BudgetList.append(budgetText)
         else:
             print("no budget")
+            BudgetList.append(None)
 
         if grossBool:
             print(grossText)
+            GrossList.append(grossText)
         else:
             print("no gross")
+            GrossList.append(None)
 
         if budgetBool and grossBool:
             netText = grossText-budgetText
             print(netText)
+            NetList.append(netText)
         else:
             print("no net")
+            NetList.append(None)
 
         for i in date:
             dateText = i.get_text()[12:]
@@ -117,67 +120,82 @@ def second_scrape():
             if dateText.split()[0] in MonthList:
                 dateText = dparser.parse(dateText, fuzzy = True)
                 print(dateText)
+                DateList.append(dateText)
             else:
                 print("no date")
-
-        # things to figure out, different currencies, need net, formatting it to append, 
+                DateList.append(None)
         # do i have to adjust for inflation? lmao
         print("\n")
+        
+    data = {
+        "Budget": BudgetList,
+        "Gross": GrossList,
+        "Net": NetList,
+        "Date": DateList
+    }
+    df2 = pd.DataFrame(data)
+    return df2
+    
 
 # this is convert and clean up currency to make it all USD
 def laundry_machine(temp, i):
-    temp.replace(' ', "")
+    # prob should clean up the replace commas lol
+    temp = temp.replace(' ', "")
+    temp = temp.replace(',', "")
     if "(estimated)" in temp:
         temp = temp.replace('(estimated)', '')
     if "€" in temp:
-        temp = ("$" + str(float(temp[1:].replace(',', ""))*1.04))
+        temp = ("$" + str(float(temp[1:])*1.04))
     if "£" in temp:
-        temp = ("$" + str(float(temp[1:].replace(',', ""))*1.21))
+        temp = ("$" + str(float(temp[1:])*1.21))
     if "NOK" in temp:
-        temp = ("$" + str(float(temp[3:].replace(',', ""))*.1))
+        temp = ("$" + str(float(temp[3:])*.1))
     if "A$" in temp:
         if "CA$" in temp:
-            temp = ("$" + str(float(temp[3:].replace(',', ""))*.75))
+            temp = ("$" + str(float(temp[3:])*.75))
         else:
-            temp = ("$" + str(float(temp[2:].replace(',', ""))*.68))
+            temp = ("$" + str(float(temp[2:])*.68))
     if "HK$" in temp:
-        temp = ("$" + str(float(temp[3:].replace(',', ""))*.128))
+        temp = ("$" + str(float(temp[3:])*.128))
     if "NZ$" in temp:
-        temp = ("$" + str(float(temp[3:].replace(',', ""))*.63))
+        temp = ("$" + str(float(temp[3:])*.63))
     if "MX$" in temp:
-        temp = ("$" + str(float(temp[3:].replace(',', ""))*.0516))
+        temp = ("$" + str(float(temp[3:])*.0516))
     if "NT$" in temp:
-        temp = ("$" + str(float(temp[3:].replace(',', ""))*.0325))
+        temp = ("$" + str(float(temp[3:])*.0325))
     if "THB" in temp:
-        temp = ("$" + str(float(temp[3:].replace(',', ""))*.0279))
+        temp = ("$" + str(float(temp[3:])*.0279))
     if "₩" in temp:
-        temp = ("$" + str(float(temp[1:].replace(',', ""))*.00075))
+        temp = ("$" + str(float(temp[1:])*.00075))
     if "HUF" in temp:
-        temp = ("$" + str(float(temp[3:].replace(',', ""))*.002515))
+        temp = ("$" + str(float(temp[3:])*.002515))
     if "IDR" in temp:
-        temp = ("$" + str(float(temp[3:].replace(',', ""))*.000063889806))
+        temp = ("$" + str(float(temp[3:])*.000063889806))
     if "RUR" in temp:
-        temp = ("$" + str(float(temp[3:].replace(',', ""))*.016550135))
+        temp = ("$" + str(float(temp[3:])*.016550135))
     if "₹" in temp:
-        temp = ("$" + str(float(temp[1:].replace(',', ""))*.0122))
+        temp = ("$" + str(float(temp[1:])*.0122))
     if "¥" in temp:
         if "Japan" in i.get_text():
-            temp = ("$" + str(float(temp[1:].replace(',', ""))*.0072))
+            temp = ("$" + str(float(temp[1:])*.0072))
         else:
             print("?")
             return 0
-            temp = ("$" + str(float(temp[1:].replace(',', ""))*.14))
+            temp = ("$" + str(float(temp[1:])*.14))
     if "$" in temp:
-        temp = float(temp[1:].replace(',', ""))
+        temp = float(temp[1:])
     else:
         print("catch")
     return temp
 
 def main():
-    first_scrape()
-    second_scrape()
+    df1 = pd.DataFrame
+    df2 = pd.DataFrame
+    df1 = first_scrape(df1)
+    df2 = second_scrape(df2)
+    df = pd.concat([df1, df2], axis=1)
     # s1 = "2012 (United Kingdom)"
-
+    df.to_csv('imdbhorrordata.csv')
     # dparser.parse(s1, fuzzy = True)
     # print(dparser.parse(s1, fuzzy = True))
     # string = "€15"
@@ -185,10 +203,7 @@ def main():
     #     print(int(string[1:])*1.04)
 if __name__ == "__main__":
     main()
-# print(len(TitleList))
-# print(len(YearList))
-# print(len(RatingList))
-# print(len(LinkList))
+
 # print(YearList)
 # print(RatingList)
 # print(LinkList)
