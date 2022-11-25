@@ -4,32 +4,37 @@ import pandas as pd
 import numpy as np
 import re
 import dateutil.parser as dparser
-from decimal import Decimal
+import sys
 IterList = []
 
 TitleList = []
 YearList = []
 RatingList = []
 LinkList = []
+MonthList = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
 def first_scrape():
 
-    for x in range(1000, 2100):
-    # for x in range(1000, 1300):
+    # to get the numbers to loop through in url
+    for x in range(1600, 2100):
+    # for x in range(1000, 1200):
         if (x % 50) == 1:
             IterList.append(x)
 
     for n in IterList:
 
         print("Scraping " + str(n))
+        # beautifulsoup things
         url = "https://www.imdb.com/search/title/?title_type=feature&num_votes=5000,&genres=horror&view=simple&sort=release_date,asc&start=%s&ref_=adv_nxt" % n
         req = requests.get(url)
         soup = BeautifulSoup(req.text, "html.parser")
+        # look up data needed
         title = soup.findAll('span', {'class': 'lister-item-header'}, {'title'})
         year = soup.findAll('span', {'class': 'lister-item-year text-muted unbold'})
         rating = soup.findAll('div', {'class': 'col-imdb-rating'})
         link = soup.find_all('a')
 
+        # cleaning and appending to lists
         for i in title:
             TitleList.append(i.get_text()[7:-9].replace('\n', ' '))
             # print(i.get_text()[7:-9].replace('\n', ' '))
@@ -48,6 +53,7 @@ def first_scrape():
                     LinkList.append(i.get('href'))
 
     # print(len(LinkList))
+    # adding all the lists to df
     data = {
         "Title": TitleList,
         "Year": YearList,
@@ -71,25 +77,26 @@ def second_scrape():
         money = soup.findAll('li', {'class': 'ipc-metadata-list__item sc-6d4f3f8c-2 fJEELB'})
         date = soup.findAll('li', {'data-testid': 'title-details-releasedate'})
         
-        # this is to append to the list nothing so it doesn't mess up dataframe
+        # this is to append nothing to the list so it doesn't mess up dataframe
         budgetBool = False
         grossBool = False
+
         print("Scraping " + url + "...")
         for i in money:
             if "Budget" in i.get_text():
                 budgetBool = True
                 budgetText = i.get_text()[6:]
+                # rewrite this into the function so i have access to coutnries
                 # print(budgetText + " (OG)")
-                budgetText = laundry_machine(budgetText)
-                # print(budgetText)
+                budgetText = laundry_machine(budgetText, i)
 
             if "Gross worldwide" in i.get_text():
                 grossBool = True
                 grossText = i.get_text()[15:]
-                grossText = laundry_machine(grossText)
+                grossText = laundry_machine(grossText, i)
 
         if budgetBool:
-            print(budgetText)
+            print( budgetText)
         else:
             print("no budget")
 
@@ -97,15 +104,28 @@ def second_scrape():
             print(grossText)
         else:
             print("no gross")
-            
+
+        if budgetBool and grossBool:
+            netText = grossText-budgetText
+            print(netText)
+        else:
+            print("no net")
+
         for i in date:
-            print(i.get_text()[12:])
+            dateText = i.get_text()[12:]
+            # print(i.get_text()[12:])
+            if dateText.split()[0] in MonthList:
+                dateText = dparser.parse(dateText, fuzzy = True)
+                print(dateText)
+            else:
+                print("no date")
+
         # things to figure out, different currencies, need net, formatting it to append, 
         # do i have to adjust for inflation? lmao
         print("\n")
 
 # this is convert and clean up currency to make it all USD
-def laundry_machine(temp):
+def laundry_machine(temp, i):
     temp.replace(' ', "")
     if "(estimated)" in temp:
         temp = temp.replace('(estimated)', '')
@@ -128,9 +148,29 @@ def laundry_machine(temp):
         temp = ("$" + str(float(temp[3:].replace(',', ""))*.0516))
     if "NT$" in temp:
         temp = ("$" + str(float(temp[3:].replace(',', ""))*.0325))
+    if "THB" in temp:
+        temp = ("$" + str(float(temp[3:].replace(',', ""))*.0279))
+    if "₩" in temp:
+        temp = ("$" + str(float(temp[1:].replace(',', ""))*.00075))
+    if "HUF" in temp:
+        temp = ("$" + str(float(temp[3:].replace(',', ""))*.002515))
+    if "IDR" in temp:
+        temp = ("$" + str(float(temp[3:].replace(',', ""))*.000063889806))
+    if "RUR" in temp:
+        temp = ("$" + str(float(temp[3:].replace(',', ""))*.016550135))
+    if "₹" in temp:
+        temp = ("$" + str(float(temp[1:].replace(',', ""))*.0122))
+    if "¥" in temp:
+        if "Japan" in i.get_text():
+            temp = ("$" + str(float(temp[1:].replace(',', ""))*.0072))
+        else:
+            print("?")
+            return 0
+            temp = ("$" + str(float(temp[1:].replace(',', ""))*.14))
     if "$" in temp:
         temp = float(temp[1:].replace(',', ""))
-        
+    else:
+        print("catch")
     return temp
 
 def main():
