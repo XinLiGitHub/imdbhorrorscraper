@@ -120,7 +120,6 @@ def second_scrape(df2):
                 dateText = dparser.parse(dateText, fuzzy = True)
                 print(dateText)
                 DateList.append(dateText)
-                # @@@@@@@@@@@@@@@@@@@@ need another if statement when theres month and year but no date
             else:
                 print("no date")
                 DateList.append(None)
