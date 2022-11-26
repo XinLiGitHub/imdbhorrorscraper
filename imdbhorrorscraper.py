@@ -4,12 +4,11 @@ import pandas as pd
 import numpy as np
 import re
 import dateutil.parser as dparser
-import sys
-IterList = []
 
-TitleList = [], YearList = [], RatingList = [], LinkList = []
+IterList = []
 MonthList = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
-BudgetList = [], GrossList = [], NetList = [], DateList = []
+
+TitleList, YearList, RatingList, LinkList, BudgetList, GrossList, NetList, DateList = [], [], [], [], [], [], [], [] 
 
 def first_scrape(df1):
     # to get the numbers to loop through in url
@@ -83,7 +82,7 @@ def second_scrape(df2):
             if "Budget" in i.get_text():
                 budgetBool = True
                 budgetText = i.get_text()[6:]
-                # rewrite this into the function so i have access to coutnries
+
                 # print(budgetText + " (OG)")
                 budgetText = laundry_machine(budgetText, i)
 
@@ -115,18 +114,19 @@ def second_scrape(df2):
             NetList.append(None)
 
         for i in date:
-            dateText = i.get_text()[12:]
+            dateText = i.get_text()[12:].replace(',', '')
             # print(i.get_text()[12:])
-            if dateText.split()[0] in MonthList:
+            if dateText.split()[0] in MonthList and int(dateText.split()[1]) < 32:
                 dateText = dparser.parse(dateText, fuzzy = True)
                 print(dateText)
                 DateList.append(dateText)
+                # @@@@@@@@@@@@@@@@@@@@ need another if statement when theres month and year but no date
             else:
                 print("no date")
                 DateList.append(None)
-        # do i have to adjust for inflation? lmao
+        # do i have to adjust for inflation?
         print("\n")
-        
+
     data = {
         "Budget": BudgetList,
         "Gross": GrossList,
@@ -139,7 +139,6 @@ def second_scrape(df2):
 
 # this is convert and clean up currency to make it all USD
 def laundry_machine(temp, i):
-    # prob should clean up the replace commas lol
     temp = temp.replace(' ', "")
     temp = temp.replace(',', "")
     if "(estimated)" in temp:
@@ -194,13 +193,9 @@ def main():
     df1 = first_scrape(df1)
     df2 = second_scrape(df2)
     df = pd.concat([df1, df2], axis=1)
-    # s1 = "2012 (United Kingdom)"
-    df.to_csv('imdbhorrordata.csv')
-    # dparser.parse(s1, fuzzy = True)
-    # print(dparser.parse(s1, fuzzy = True))
-    # string = "€15"
-    # if "€" in string:
-    #     print(int(string[1:])*1.04)
+
+    df.to_csv('imdbhorrordata5kratingsv.csv')
+
 if __name__ == "__main__":
     main()
 
