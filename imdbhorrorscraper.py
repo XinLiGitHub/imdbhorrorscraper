@@ -8,7 +8,7 @@ import dateutil.parser as dparser
 IterList = []
 MonthList = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
 
-TitleList, YearList, RatingList, LinkList, BudgetList, GrossList, NetList, DateList = [], [], [], [], [], [], [], [] 
+TitleList, YearList, RatingList, LinkList, BudgetList, GrossList, NetList, DateList, MonthDataList = [], [], [], [], [], [], [], [], []
 
 def first_scrape(df1):
     # to get the numbers to loop through in url
@@ -115,14 +115,18 @@ def second_scrape(df2):
 
         for i in date:
             dateText = i.get_text()[12:].replace(',', '')
-            # print(i.get_text()[12:])
+            # this is to catch any pages where there isn't a full date
             if dateText.split()[0] in MonthList and int(dateText.split()[1]) < 32:
                 dateText = dparser.parse(dateText, fuzzy = True)
+                monthText = str(dateText)[5:7]
                 print(dateText)
+                print(monthText)
                 DateList.append(dateText)
+                MonthDataList.append(monthText)
             else:
                 print("no date")
                 DateList.append(None)
+                MonthDataList.append(None)
         # do i have to adjust for inflation?
         print("\n")
 
@@ -130,7 +134,8 @@ def second_scrape(df2):
         "Budget": BudgetList,
         "Gross": GrossList,
         "Net": NetList,
-        "Date": DateList
+        "Date": DateList,
+        "Month": MonthDataList
     }
     df2 = pd.DataFrame(data)
     return df2
@@ -193,7 +198,7 @@ def main():
     df2 = second_scrape(df2)
     df = pd.concat([df1, df2], axis=1)
 
-    df.to_csv('imdbhorrordata5kratingsv.csv')
+    df.to_csv('imdbhorrordata5kratingsv2.csv')
 
 if __name__ == "__main__":
     main()
