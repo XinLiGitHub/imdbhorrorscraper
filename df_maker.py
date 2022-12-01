@@ -26,7 +26,21 @@ def main():
         # print(df.iloc[ShavedList[i], :])
         df2 = df2.append(new_row, ignore_index=True)
     print(df2)
-    df2.to_csv('imdbhorrordata5kratingsv3.csv')
+    # df2.to_csv('imdbhorrordata5kratingsv3.csv')
+
+    NetList = df['Net'].tolist()
+    NewNetList = []
+    for i in range(len(NetList)):
+        if str(NetList[i]) != 'nan':
+            NewNetList.append(i)
+    df3 = pd.DataFrame()
+    for i in range(len(NewNetList)):
+        new_row = df.iloc[NewNetList[i], :]
+
+        df3 = df3.append(new_row, ignore_index=True)
+
+    print(df3)
+    df3.to_csv('imdbhorrordata5kratingsv3_allnet.csv')
 
     
 if __name__ == "__main__":
