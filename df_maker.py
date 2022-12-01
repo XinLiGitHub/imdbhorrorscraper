@@ -28,14 +28,14 @@ def main():
     print(df2)
     # df2.to_csv('imdbhorrordata5kratingsv3.csv')
 
-    NetList = df['Net'].tolist()
+    NetList = df2['Net'].tolist()
     NewNetList = []
     for i in range(len(NetList)):
         if str(NetList[i]) != 'nan':
             NewNetList.append(i)
     df3 = pd.DataFrame()
     for i in range(len(NewNetList)):
-        new_row = df.iloc[NewNetList[i], :]
+        new_row = df2.iloc[NewNetList[i], :]
 
         df3 = df3.append(new_row, ignore_index=True)
 
